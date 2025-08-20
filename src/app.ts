@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+
 import { connectDB } from "./db";
 import { createEventRoutes } from "./events";
 

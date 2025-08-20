@@ -1,5 +1,6 @@
 import { MongoClient, Db, Collection, Document } from "mongodb";
 import dotenv from "dotenv";
+
 import { GameEvent, ScoreRecord, DatabaseResult, EventRecord } from "./types";
 
 // Load environment variables

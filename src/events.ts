@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+
 import {
   getSupportedGames,
   insertEvent,
@@ -6,28 +7,33 @@ import {
   findHighScores,
   executeAnalyticsQuery,
 } from "./db";
-import { ScoreRecord } from "./types";
 import {
-  validateGameEvent,
-  validateScoreEvent,
-  getValidationErrors,
-  validateAnalyticsQuery,
-} from "./validation";
+  AnalyticsQuery,
+  analyticsQuerySchema,
+  GameEvent,
+  gameEventSchema,
+  ScoreRecord,
+} from "./types";
+import { formatValidationErrors, validateInput } from "./validation";
 
 // Game events endpoint
 const handleEvent = async (req: Request, res: Response) => {
   try {
-    const eventData = req.body;
+    const validationResult = await validateInput<GameEvent>(
+      gameEventSchema,
+      req.body
+    );
 
-    // Validate the event data using the new validation function
-    if (!validateGameEvent(eventData)) {
-      const errors = getValidationErrors(eventData, "GameEvent");
+    if (!validationResult.data) {
+      const errors = formatValidationErrors(validationResult.error);
       return res.status(400).json({
         error: "Invalid event data",
         message: "Event validation failed",
         details: errors,
       });
     }
+
+    const eventData = validationResult.data;
 
     // Validate game is supported
     if (!getSupportedGames().includes(eventData.game)) {
@@ -38,37 +44,31 @@ const handleEvent = async (req: Request, res: Response) => {
     }
 
     // If the event is a high score event, insert the score into the scores collection
-    if (validateScoreEvent(eventData)) {
+    const playerName = eventData.data.player_name;
+    const score = eventData.data.score;
+    if (
+      eventData.event === "high_score" &&
+      playerName &&
+      typeof playerName === "string" &&
+      score &&
+      typeof score === "number"
+    ) {
       const scoreRecord: ScoreRecord = {
         game: eventData.game,
         mode: eventData.mode,
         player: eventData.player,
         run: eventData.run,
-        player_name: eventData.data.player_name,
-        score: eventData.data.score,
+        player_name: playerName,
+        score: score,
         data: eventData.data,
         timestamp: eventData.timestamp,
       };
 
-      const scoreResult = await insertScore(scoreRecord);
-      if (!scoreResult.success) {
-        console.error("Failed to insert score:", scoreResult.error);
-        return res.status(500).json({
-          error: "Database error",
-          message: "Failed to record score",
-        });
-      }
+      await insertScore(scoreRecord);
     }
 
     // Insert the event into the game-specific collection
-    const eventResult = await insertEvent(eventData);
-    if (!eventResult.success) {
-      console.error("Failed to insert event:", eventResult.error);
-      return res.status(500).json({
-        error: "Database error",
-        message: "Failed to record event",
-      });
-    }
+    await insertEvent(eventData);
 
     res.status(201).json({
       message: "Event recorded successfully",
@@ -122,14 +122,21 @@ const getHighScores = async (req: Request, res: Response) => {
 };
 
 const getAnalytics = async (req: Request, res: Response) => {
-  const queryData = req.body;
+  const validationResult = await validateInput<AnalyticsQuery>(
+    analyticsQuerySchema,
+    req.body
+  );
 
-  if (!validateAnalyticsQuery(queryData)) {
+  if (!validationResult.data) {
+    const errors = formatValidationErrors(validationResult.error);
     return res.status(400).json({
       error: "Invalid query data",
-      message: "Query data is invalid",
+      message: "Query validation failed",
+      details: errors,
     });
   }
+
+  const queryData = validationResult.data;
 
   // Validate game is supported
   if (!getSupportedGames().includes(queryData.game)) {
