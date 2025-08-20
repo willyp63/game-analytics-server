@@ -1,86 +1,29 @@
 import express, { Request, Response } from "express";
 import {
-  getDB,
-  getEventsCollectionName,
-  getScoresCollectionName,
   getSupportedGames,
+  insertEvent,
+  insertScore,
+  findHighScores,
 } from "./db";
-
-// Event validation interface
-export interface GameEvent {
-  game: string;
-  mode: string;
-  player: string;
-  run: string;
-  event: string;
-  data: Record<string, unknown>;
-  timestamp: Date;
-}
-
-// High score event validation interface
-export interface HighScoreEvent extends GameEvent {
-  event: "high_score";
-  data: {
-    score: number;
-    player_name: string;
-  } & Record<string, unknown>;
-}
-
-// Score database record
-export interface ScoreRecord {
-  game: string;
-  mode: string;
-  player: string;
-  run: string;
-  player_name: string;
-  score: number;
-  data: Record<string, unknown>;
-  timestamp: Date;
-}
-
-// Validate event
-const validateEvent = (eventData: any): eventData is GameEvent => {
-  return (
-    eventData &&
-    eventData.game &&
-    typeof eventData.game === "string" &&
-    eventData.mode &&
-    typeof eventData.mode === "string" &&
-    eventData.player &&
-    typeof eventData.player === "string" &&
-    eventData.run &&
-    typeof eventData.run === "string" &&
-    eventData.event &&
-    typeof eventData.event === "string" &&
-    eventData.data &&
-    eventData.timestamp
-  );
-};
-
-// Validate high score event
-const validateHighScoreEvent = (
-  eventData: GameEvent
-): eventData is HighScoreEvent => {
-  return (
-    eventData.event === "high_score" &&
-    !!eventData.data.score &&
-    typeof eventData.data.score === "number" &&
-    !!eventData.data.player_name &&
-    typeof eventData.data.player_name === "string"
-  );
-};
+import { ScoreRecord } from "./types";
+import {
+  validateGameEvent,
+  validateScoreEvent,
+  getValidationErrors,
+} from "./validation";
 
 // Game events endpoint
 const handleEvent = async (req: Request, res: Response) => {
   try {
     const eventData = req.body;
 
-    // Validate the event data
-    if (!validateEvent(eventData)) {
+    // Validate the event data using the new validation function
+    if (!validateGameEvent(eventData)) {
+      const errors = getValidationErrors(eventData, "GameEvent");
       return res.status(400).json({
         error: "Invalid event data",
-        message:
-          "Event must include _id, game, mode, player, run, event, data, and timestamp fields",
+        message: "Event validation failed",
+        details: errors,
       });
     }
 
@@ -93,7 +36,7 @@ const handleEvent = async (req: Request, res: Response) => {
     }
 
     // If the event is a high score event, insert the score into the scores collection
-    if (validateHighScoreEvent(eventData)) {
+    if (validateScoreEvent(eventData)) {
       const scoreRecord: ScoreRecord = {
         game: eventData.game,
         mode: eventData.mode,
@@ -105,13 +48,25 @@ const handleEvent = async (req: Request, res: Response) => {
         timestamp: eventData.timestamp,
       };
 
-      const scoresCollectionName = getScoresCollectionName(eventData.game);
-      await getDB().collection(scoresCollectionName).insertOne(scoreRecord);
+      const scoreResult = await insertScore(scoreRecord);
+      if (!scoreResult.success) {
+        console.error("Failed to insert score:", scoreResult.error);
+        return res.status(500).json({
+          error: "Database error",
+          message: "Failed to record score",
+        });
+      }
     }
 
     // Insert the event into the game-specific collection
-    const collectionName = getEventsCollectionName(eventData.game);
-    await getDB().collection(collectionName).insertOne(eventData);
+    const eventResult = await insertEvent(eventData);
+    if (!eventResult.success) {
+      console.error("Failed to insert event:", eventResult.error);
+      return res.status(500).json({
+        error: "Database error",
+        message: "Failed to record event",
+      });
+    }
 
     res.status(201).json({
       message: "Event recorded successfully",
@@ -136,23 +91,32 @@ const getHighScores = async (req: Request, res: Response) => {
     });
   }
 
-  // Get the high scores for the given game and mode
-  const scoresCollectionName = getScoresCollectionName(game);
-  const scores = await getDB()
-    .collection(scoresCollectionName)
-    .find({ mode })
-    .sort({ score: -1 })
-    .limit(100)
-    .toArray();
+  try {
+    // Get the high scores for the given game and mode using type-safe function
+    const result = await findHighScores(game, mode, 100);
+    if (!result.success) {
+      console.error("Failed to fetch high scores:", result.error);
+      return res.status(500).json({
+        error: "Database error",
+        message: "Failed to fetch high scores",
+      });
+    }
 
-  // Return the high scores
-  res.json(
-    scores.map((score) => ({
-      player_name: score.player_name,
-      score: score.score,
-      timestamp: score.timestamp,
-    }))
-  );
+    // Return the high scores
+    res.json(
+      (result.data || []).map((score) => ({
+        player_name: score.player_name,
+        score: score.score,
+        timestamp: score.timestamp,
+      }))
+    );
+  } catch (error) {
+    console.error("Error fetching high scores:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to fetch high scores",
+    });
+  }
 };
 
 export const createEventRoutes = () => {

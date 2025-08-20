@@ -1,5 +1,6 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient, Db, Collection } from "mongodb";
 import dotenv from "dotenv";
+import { GameEvent, ScoreRecord, DatabaseResult, EventRecord } from "./types";
 
 // Load environment variables
 dotenv.config();
@@ -21,7 +22,6 @@ const SUPPORTED_GAMES = ["tetris", "snake", "pong", "breakout", "pacman"];
 let client: MongoClient;
 let db: Db;
 
-// Connect to MongoDB
 export const connectDB = async () => {
   try {
     client = new MongoClient(MONGO_URI, mongoOptions);
@@ -63,7 +63,6 @@ export const connectDB = async () => {
   }
 };
 
-// Initialize collections for all supported games
 const initializeGameCollections = async () => {
   try {
     console.log("Initializing game collections...");
@@ -71,6 +70,9 @@ const initializeGameCollections = async () => {
     for (const game of SUPPORTED_GAMES) {
       await ensureCollectionExists(getEventsCollectionName(game));
       await ensureCollectionExists(getScoresCollectionName(game));
+
+      // Create indexes for better performance
+      await createCollectionIndexes(game);
     }
 
     console.log("Game collections initialized successfully");
@@ -93,7 +95,24 @@ const ensureCollectionExists = async (collectionName: string) => {
   }
 };
 
-// Get the database instance
+const createCollectionIndexes = async (game: string) => {
+  try {
+    // Events collection indexes
+    const eventsCollection = getEventsCollection(game);
+    await eventsCollection.createIndex({ mode: 1 });
+    await eventsCollection.createIndex({ timestamp: -1 });
+
+    // Scores collection indexes
+    const scoresCollection = getScoresCollection(game);
+    await scoresCollection.createIndex({ mode: 1 });
+    await scoresCollection.createIndex({ score: -1 });
+
+    console.log(`Indexes created for ${game} collections`);
+  } catch (error) {
+    console.error(`Error creating indexes for ${game}:`, error);
+  }
+};
+
 export const getDB = () => {
   if (!db) {
     throw new Error("Database not connected. Call connectDB() first.");
@@ -101,22 +120,74 @@ export const getDB = () => {
   return db;
 };
 
-// Check if database is connected
-export const isConnected = () => {
-  return client?.db() !== undefined;
-};
-
-// Get list of supported games
 export const getSupportedGames = () => {
   return [...SUPPORTED_GAMES];
 };
 
-// Get the name of the events collection for a given game
 export const getEventsCollectionName = (game: string) => {
   return `${game}_events`;
 };
 
-// Get the name of the scores collection for a given game
 export const getScoresCollectionName = (game: string) => {
   return `${game}_scores`;
+};
+
+export const getEventsCollection = (game: string): Collection<EventRecord> => {
+  return getDB().collection<GameEvent>(getEventsCollectionName(game));
+};
+
+export const getScoresCollection = (game: string): Collection<ScoreRecord> => {
+  return getDB().collection<ScoreRecord>(getScoresCollectionName(game));
+};
+
+export const insertEvent = async (
+  event: GameEvent
+): Promise<DatabaseResult<void>> => {
+  try {
+    await getEventsCollection(event.game).insertOne(event);
+    return { success: true };
+  } catch (error) {
+    console.error(`Error inserting event for ${event.game}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+export const insertScore = async (
+  score: ScoreRecord
+): Promise<DatabaseResult<void>> => {
+  try {
+    await getScoresCollection(score.game).insertOne(score);
+    return { success: true };
+  } catch (error) {
+    console.error(`Error inserting score for ${score.game}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+export const findHighScores = async (
+  game: string,
+  mode: string,
+  limit: number = 100
+): Promise<DatabaseResult<ScoreRecord[]>> => {
+  try {
+    const collection = getScoresCollection(game);
+    const scores = await collection
+      .find({ mode })
+      .sort({ score: -1 })
+      .limit(limit)
+      .toArray();
+    return { success: true, data: scores };
+  } catch (error) {
+    console.error(`Error finding scores by mode for ${game}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
 };
