@@ -29,7 +29,7 @@ export const gameEventSchema = vine.object({
   run: vine.string().trim().minLength(1),
   event: vine.string().trim().minLength(1),
   data: vine.object({}).allowUnknownProperties(),
-  timestamp: vine.date(),
+  timestamp: vine.date({ formats: ["iso8601"] }),
 });
 
 // Game event stored in the database
