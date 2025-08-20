@@ -1,27 +1,41 @@
 {
   "name": "game-analytics-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/app.js",
-    "dev": "nodemon src/app.ts"
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@vinejs/vine": "^3.0.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "joi": "^18.0.1",
     "mongodb": "^6.3.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-typescript": "^7.27.1",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/joi": "^17.2.2",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^24.3.0",
+    "@types/supertest": "^6.0.3",
+    "babel-jest": "^30.0.5",
+    "jest": "^30.0.5",
+    "mongodb-memory-server": "^10.2.0",
     "nodemon": "^3.1.10",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

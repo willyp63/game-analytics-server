@@ -1,27 +1,30 @@
-import vine, { VineObject } from "@vinejs/vine";
+import Joi from "joi";
 
 export interface ValidationResult<T> {
   data?: T;
   error?: any;
 }
 
-// Validate input data against a VineJS schema
+// Validate input data against a Joi schema
 export const validateInput = async <T>(
-  schema: VineObject<any, any, any, any>,
+  schema: Joi.ObjectSchema,
   data: any
 ): Promise<ValidationResult<T>> => {
   try {
-    const validated = await vine.validate({ schema, data });
-    return { data: validated as T };
+    const { error, value } = schema.validate(data, { abortEarly: false });
+    if (error) {
+      return { error };
+    }
+    return { data: value as T };
   } catch (error) {
     return { error };
   }
 };
 
-// Helper function to format VineJS validation errors
+// Helper function to format Joi validation errors
 export const formatValidationErrors = (error: any): string[] => {
-  if (error.messages) {
-    return error.messages.map((msg: any) => msg.message);
+  if (error.details) {
+    return error.details.map((detail: any) => detail.message);
   }
   return [error.message || "Validation failed"];
 };

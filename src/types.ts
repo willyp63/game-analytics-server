@@ -1,14 +1,14 @@
 import { ObjectId, Document } from "mongodb";
-import vine from "@vinejs/vine";
+import Joi from "joi";
 
 export interface AnalyticsQuery {
   game: string;
   pipeline: Document[];
 }
 
-export const analyticsQuerySchema = vine.object({
-  game: vine.string().trim().minLength(1),
-  pipeline: vine.array(vine.object({}).allowUnknownProperties()),
+export const analyticsQuerySchema = Joi.object({
+  game: Joi.string().trim().min(1).required(),
+  pipeline: Joi.array().items(Joi.object().unknown(true)).required(),
 });
 
 // Game event sent from the client
@@ -22,14 +22,14 @@ export interface GameEvent {
   timestamp: Date;
 }
 
-export const gameEventSchema = vine.object({
-  game: vine.string().trim().minLength(1),
-  mode: vine.string().trim().minLength(1),
-  player: vine.string().trim().minLength(1),
-  run: vine.string().trim().minLength(1),
-  event: vine.string().trim().minLength(1),
-  data: vine.object({}).allowUnknownProperties(),
-  timestamp: vine.date({ formats: ["iso8601"] }),
+export const gameEventSchema = Joi.object({
+  game: Joi.string().trim().min(1).required(),
+  mode: Joi.string().trim().min(1).required(),
+  player: Joi.string().trim().min(1).required(),
+  run: Joi.string().trim().min(1).required(),
+  event: Joi.string().trim().min(1).required(),
+  data: Joi.object().unknown(true).required(),
+  timestamp: Joi.date().iso().required(),
 });
 
 // Game event stored in the database
