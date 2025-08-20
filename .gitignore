@@ -1,0 +1,25 @@
+# Node.js
+node_modules/ 
+
+# Logs
+logs/
+*.log 
+
+# Build output
+dist/ 
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Environment variables
+.env 
+.env.*
+
+# Editor and IDE configurations
+.vscode/ 
+.DS_Store 
+
+# Miscellaneous
+tmp/ 
+*.tmp 
+*.bak 
