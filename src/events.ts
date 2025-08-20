@@ -4,12 +4,14 @@ import {
   insertEvent,
   insertScore,
   findHighScores,
+  executeAnalyticsQuery,
 } from "./db";
 import { ScoreRecord } from "./types";
 import {
   validateGameEvent,
   validateScoreEvent,
   getValidationErrors,
+  validateAnalyticsQuery,
 } from "./validation";
 
 // Game events endpoint
@@ -119,11 +121,46 @@ const getHighScores = async (req: Request, res: Response) => {
   }
 };
 
+const getAnalytics = async (req: Request, res: Response) => {
+  const queryData = req.body;
+
+  if (!validateAnalyticsQuery(queryData)) {
+    return res.status(400).json({
+      error: "Invalid query data",
+      message: "Query data is invalid",
+    });
+  }
+
+  // Validate game is supported
+  if (!getSupportedGames().includes(queryData.game)) {
+    return res.status(400).json({
+      error: "Invalid game",
+      message: "Game is not supported",
+    });
+  }
+
+  // Execute the analytics query
+  const result = await executeAnalyticsQuery(
+    queryData.game,
+    queryData.pipeline
+  );
+  if (!result.success) {
+    return res.status(500).json({
+      error: "Database error",
+      message: "Failed to execute analytics query",
+    });
+  }
+
+  res.json(result.data);
+};
+
 export const createEventRoutes = () => {
   const router = express.Router();
 
   router.post("/events", handleEvent);
   router.get("/scores/:game/:mode", getHighScores);
+
+  router.post("/analytics/query", getAnalytics);
 
   return router;
 };

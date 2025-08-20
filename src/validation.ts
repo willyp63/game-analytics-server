@@ -1,4 +1,11 @@
-import { GameEvent, ScoreEvent, ScoreRecord } from "./types";
+import { AnalyticsQuery, GameEvent, ScoreEvent, ScoreRecord } from "./types";
+
+export const validateAnalyticsQuery = (data: any): data is AnalyticsQuery => {
+  if (!data || typeof data !== "object") return false;
+  if (typeof data.game !== "string" || data.game.trim() === "") return false;
+  if (typeof data.pipeline !== "object" || data.pipeline === null) return false;
+  return true;
+};
 
 // Schema validation for GameEvent
 export const validateGameEvent = (data: any): data is GameEvent => {

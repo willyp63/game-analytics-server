@@ -1,4 +1,9 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, Document } from "mongodb";
+
+export interface AnalyticsQuery {
+  game: string;
+  pipeline: Document[];
+}
 
 // Game event sent from the client
 export interface GameEvent {

@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection } from "mongodb";
+import { MongoClient, Db, Collection, Document } from "mongodb";
 import dotenv from "dotenv";
 import { GameEvent, ScoreRecord, DatabaseResult, EventRecord } from "./types";
 
@@ -185,6 +185,183 @@ export const findHighScores = async (
     return { success: true, data: scores };
   } catch (error) {
     console.error(`Error finding scores by mode for ${game}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+// Safe MongoDB query execution
+const ALLOWED_OPERATIONS = [
+  "$match",
+  "$group",
+  "$sort",
+  "$limit",
+  "$project",
+  "$lookup",
+  "$unwind",
+  "$addFields",
+  "$set",
+  "$count",
+];
+
+// Filter out dangerous operations like $out, $merge, $geoNear, $text
+const DANGEROUS_OPERATIONS = [
+  "$out",
+  "$merge",
+  "$geoNear",
+  "$text",
+  "$indexStats",
+  "$collStats",
+  "$currentOp",
+  "$listLocalSessions",
+];
+
+// Maximum pipeline stages to prevent overly complex queries
+const MAX_PIPELINE_STAGES = 10;
+
+// Maximum limit value to prevent memory issues
+const MAX_LIMIT = 1000;
+
+// Maximum group size to prevent memory issues
+const MAX_GROUP_SIZE = 10000;
+
+export const sanitizePipeline = (pipeline: Document[]): Document[] => {
+  let sanitizedPipeline: Document[] = [];
+  let hasLimit = false;
+  let hasSort = false;
+
+  // Filter and validate each pipeline stage
+  for (let i = 0; i < Math.min(pipeline.length, MAX_PIPELINE_STAGES); i++) {
+    const stage = pipeline[i];
+    const stageKey = Object.keys(stage)[0];
+
+    // Skip dangerous operations
+    if (DANGEROUS_OPERATIONS.includes(stageKey)) {
+      console.warn(
+        `Dangerous operation ${stageKey} filtered out from pipeline`
+      );
+      continue;
+    }
+
+    // Validate allowed operations
+    if (!ALLOWED_OPERATIONS.includes(stageKey)) {
+      console.warn(
+        `Unsupported operation ${stageKey} filtered out from pipeline`
+      );
+      continue;
+    }
+
+    // Special handling for $limit stage
+    if (stageKey === "$limit") {
+      const limitValue = (stage as any)[stageKey];
+      if (
+        typeof limitValue === "number" &&
+        limitValue > 0 &&
+        limitValue <= MAX_LIMIT
+      ) {
+        sanitizedPipeline.push(stage);
+        hasLimit = true;
+      } else {
+        // Replace with safe limit
+        sanitizedPipeline.push({
+          $limit: Math.min(limitValue || 100, MAX_LIMIT),
+        } as Document);
+        hasLimit = true;
+      }
+      continue;
+    }
+
+    // Special handling for $sort stage
+    if (stageKey === "$sort") {
+      const sortFields = Object.keys((stage as any)[stageKey]);
+      if (sortFields.length <= 5) {
+        // Limit sort fields to prevent memory issues
+        sanitizedPipeline.push(stage);
+        hasSort = true;
+      } else {
+        // Take only first 5 sort fields
+        const limitedSort: Record<string, any> = {};
+        sortFields.slice(0, 5).forEach((field) => {
+          limitedSort[field] = (stage as any)[stageKey][field];
+        });
+        sanitizedPipeline.push({ $sort: limitedSort } as Document);
+        hasSort = true;
+      }
+      continue;
+    }
+
+    // Special handling for $group stage
+    if (stageKey === "$group") {
+      const groupStage = (stage as any)[stageKey];
+      // Add $limit to group results if not present
+      if (!hasLimit) {
+        sanitizedPipeline.push(stage);
+        sanitizedPipeline.push({ $limit: MAX_GROUP_SIZE } as Document);
+        hasLimit = true;
+      } else {
+        sanitizedPipeline.push(stage);
+      }
+      continue;
+    }
+
+    // Special handling for $lookup stage (limit to prevent cartesian products)
+    if (stageKey === "$lookup") {
+      const lookupStage = (stage as any)[stageKey];
+      // Add pipeline to limit lookup results
+      if (!lookupStage.pipeline) {
+        lookupStage.pipeline = [{ $limit: 1000 }];
+      } else if (Array.isArray(lookupStage.pipeline)) {
+        // Ensure lookup pipeline has a limit
+        const hasLookupLimit = lookupStage.pipeline.some(
+          (s: any) => Object.keys(s)[0] === "$limit"
+        );
+        if (!hasLookupLimit) {
+          lookupStage.pipeline.push({ $limit: 1000 });
+        }
+      }
+      sanitizedPipeline.push(stage);
+      continue;
+    }
+
+    // Add all other valid stages
+    sanitizedPipeline.push(stage);
+  }
+
+  // Add automatic $limit if none specified to prevent runaway queries
+  if (!hasLimit) {
+    sanitizedPipeline.push({ $limit: 1000 } as Document);
+  }
+
+  // Add $allowDiskUse: false to prevent disk usage for large operations
+  if (hasSort && sanitizedPipeline.length > 0) {
+    // MongoDB will automatically use disk if sort exceeds memory, but we can warn
+    console.log(
+      "Sort operation detected - ensure adequate memory for operation"
+    );
+  }
+
+  return sanitizedPipeline;
+};
+
+// Helper function to execute a sanitized aggregation pipeline
+export const executeAnalyticsQuery = async (
+  game: string,
+  pipeline: Document[]
+): Promise<DatabaseResult<Document[]>> => {
+  try {
+    // Sanitize the pipeline before execution
+    const sanitizedPipeline = sanitizePipeline(pipeline);
+
+    // Execute the sanitized pipeline
+    const results = await getEventsCollection(game)
+      .aggregate(sanitizedPipeline)
+      .toArray();
+
+    return { success: true, data: results };
+  } catch (error) {
+    console.error(`Error executing analytics query for ${game}:`, error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
