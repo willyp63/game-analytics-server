@@ -1,7 +1,5 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { MongoClient, Db } from "mongodb";
-import express from "express";
-import { createEventRoutes } from "../events";
 
 export class TestDatabase {
   private mongoServer: MongoMemoryServer;
@@ -50,22 +48,9 @@ export class TestDatabase {
   }
 }
 
-export function createTestEvent(
-  game: string = "tetris",
-  mode: string = "classic",
-  player: string = "testPlayer",
-  score: number = 1000
-) {
+export function createTestEvent(data: any) {
   return {
-    game,
-    mode,
-    player,
-    run: "test-run-1",
-    event: "high_score",
-    data: {
-      score,
-      player_name: player,
-    },
+    ...data,
     timestamp: new Date().toISOString(),
   };
 }

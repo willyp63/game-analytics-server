@@ -1,14 +1,6 @@
 import { MongoClient, Db, Collection, Document } from "mongodb";
-import dotenv from "dotenv";
 
 import { GameEvent, ScoreRecord, DatabaseResult, EventRecord } from "./types";
-
-// Load environment variables
-dotenv.config();
-const MONGO_URI = process.env.MONGO_URI;
-if (!MONGO_URI) {
-  throw new Error("MONGO_URI environment variable is not defined");
-}
 
 // MongoDB connection options
 const mongoOptions = {
@@ -23,9 +15,9 @@ const SUPPORTED_GAMES = ["tetris", "snake", "pong", "breakout", "pacman"];
 let client: MongoClient;
 let db: Db;
 
-export const connectDB = async () => {
+export const connectDB = async (mongoUri: string) => {
   try {
-    client = new MongoClient(MONGO_URI, mongoOptions);
+    client = new MongoClient(mongoUri, mongoOptions);
     await client.connect();
 
     db = client.db();
@@ -62,6 +54,10 @@ export const connectDB = async () => {
     console.error("Error connecting to MongoDB:", error);
     process.exit(1);
   }
+};
+
+export const disconnectDB = async () => {
+  await client.close();
 };
 
 const initializeGameCollections = async () => {

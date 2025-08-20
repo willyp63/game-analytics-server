@@ -14,9 +14,9 @@ export const analyticsQuerySchema = Joi.object({
 // Game event sent from the client
 export interface GameEvent {
   game: string;
-  mode: string;
+  mode?: string;
   player: string;
-  run: string;
+  run?: string;
   event: string;
   data: Record<string, unknown>;
   timestamp: Date;
@@ -24,9 +24,9 @@ export interface GameEvent {
 
 export const gameEventSchema = Joi.object({
   game: Joi.string().trim().min(1).required(),
-  mode: Joi.string().trim().min(1).required(),
+  mode: Joi.string().trim().min(1),
   player: Joi.string().trim().min(1).required(),
-  run: Joi.string().trim().min(1).required(),
+  run: Joi.string().trim().min(1),
   event: Joi.string().trim().min(1).required(),
   data: Joi.object().unknown(true).required(),
   timestamp: Joi.date().iso().required(),
@@ -50,9 +50,9 @@ export interface ScoreEvent extends GameEvent {
 export interface ScoreRecord {
   _id?: ObjectId;
   game: string;
-  mode: string;
+  mode?: string;
   player: string;
-  run: string;
+  run?: string;
   player_name: string;
   score: number;
   data: Record<string, unknown>;
