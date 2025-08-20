@@ -10,7 +10,7 @@ const mongoOptions = {
 };
 
 // TODO: Move this to a collection or env variable
-const SUPPORTED_GAMES = ["tetris", "snake", "pong", "breakout", "pacman"];
+const SUPPORTED_GAMES = ["eldritch_shores", "whacky_wharf"];
 
 let client: MongoClient;
 let db: Db;
