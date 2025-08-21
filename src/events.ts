@@ -106,13 +106,13 @@ const getHighScores = async (req: Request, res: Response) => {
     }
 
     // Return the high scores
-    res.json({
-      scores: (result.data || []).map((score) => ({
+    res.json(
+      (result.data || []).map((score) => ({
         player_name: score.player_name,
         score: score.score,
         timestamp: score.timestamp,
-      })),
-    });
+      }))
+    );
   } catch (error) {
     console.error("Error fetching high scores:", error);
     res.status(500).json({

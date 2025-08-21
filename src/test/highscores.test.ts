@@ -105,7 +105,7 @@ describe("High Scores API", () => {
       const highScoresResponse = await request(app)
         .get("/api/scores/eldritch_shores/classic")
         .expect(200);
-      const highScores = highScoresResponse.body.scores;
+      const highScores = highScoresResponse.body;
       expect(highScores).toHaveLength(3);
       expect(highScores[0].score).toBe(5595);
       expect(highScores[0].player_name).toBe("player1");
@@ -121,7 +121,7 @@ describe("High Scores API", () => {
       .get("/api/scores/whacky_wharf/classic")
       .expect(200);
 
-    expect(response.body.scores).toEqual([]);
+    expect(response.body).toEqual([]);
   });
 
   it("should return 400 for unsupported game", async () => {
