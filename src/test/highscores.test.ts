@@ -31,7 +31,7 @@ describe("High Scores API", () => {
   describe("POST /api/events", () => {
     it("should accept a high score event and store it", async () => {
       const event = createTestEvent({
-        game: "tetris",
+        game: "eldritch_shores",
         player: "123-456",
         event_name: "high_score",
         data: {
@@ -40,20 +40,17 @@ describe("High Scores API", () => {
         },
       });
 
-      const response = await request(app)
-        .post("/api/events")
-        .send(event)
-        .expect(201);
+      await request(app).post("/api/events").send(event).expect(201);
 
       // Verify the event was stored in the events collection
-      const eventsCollection = testDb.getCollection("tetris_events");
+      const eventsCollection = testDb.getCollection("eldritch_shores_events");
       const storedEvent = await eventsCollection.findOne();
       expect(storedEvent).toBeTruthy();
       expect(storedEvent?.event_name).toBe("high_score");
       expect(storedEvent?.data.score).toBe(1500);
 
       // Verify the score was stored in the scores collection
-      const scoresCollection = testDb.getCollection("tetris_scores");
+      const scoresCollection = testDb.getCollection("eldritch_shores_scores");
       const storedScore = await scoresCollection.findOne();
       expect(storedScore).toBeTruthy();
       expect(storedScore?.score).toBe(1500);
@@ -63,7 +60,7 @@ describe("High Scores API", () => {
     it("should accept multiple high score events and return them sorted by score", async () => {
       const events = [
         createTestEvent({
-          game: "tetris",
+          game: "eldritch_shores",
           mode: "classic",
           player: "123-456",
           event_name: "high_score",
@@ -73,7 +70,7 @@ describe("High Scores API", () => {
           },
         }),
         createTestEvent({
-          game: "tetris",
+          game: "eldritch_shores",
           mode: "classic",
           player: "abc-def",
           event_name: "high_score",
@@ -83,7 +80,7 @@ describe("High Scores API", () => {
           },
         }),
         createTestEvent({
-          game: "tetris",
+          game: "eldritch_shores",
           mode: "classic",
           player: "xyz-xyz",
           event_name: "high_score",
@@ -100,15 +97,15 @@ describe("High Scores API", () => {
       }
 
       // Verify all scores were stored
-      const scoresCollection = testDb.getCollection("tetris_scores");
+      const scoresCollection = testDb.getCollection("eldritch_shores_scores");
       const allScores = await scoresCollection.find({}).toArray();
       expect(allScores).toHaveLength(3);
 
       // Verify high scores are sorted by score in descending order
       const highScoresResponse = await request(app)
-        .get("/api/scores/tetris/classic")
+        .get("/api/scores/eldritch_shores/classic")
         .expect(200);
-      const highScores = highScoresResponse.body;
+      const highScores = highScoresResponse.body.scores;
       expect(highScores).toHaveLength(3);
       expect(highScores[0].score).toBe(5595);
       expect(highScores[0].player_name).toBe("player1");
@@ -121,10 +118,10 @@ describe("High Scores API", () => {
 
   it("should return empty array when no scores exist for game/mode", async () => {
     const response = await request(app)
-      .get("/api/scores/pacman/classic")
+      .get("/api/scores/whacky_wharf/classic")
       .expect(200);
 
-    expect(response.body).toEqual([]);
+    expect(response.body.scores).toEqual([]);
   });
 
   it("should return 400 for unsupported game", async () => {
