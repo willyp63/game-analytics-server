@@ -24,9 +24,9 @@ export interface GameEvent {
 
 export const gameEventSchema = Joi.object({
   game: Joi.string().trim().min(1).required(),
-  mode: Joi.string().trim().min(1),
+  mode: Joi.string().trim(),
   player: Joi.string().trim().min(1).required(),
-  run: Joi.string().trim().min(1),
+  run: Joi.string().trim(),
   event_name: Joi.string().trim().min(1).required(),
   data: Joi.object().unknown(true),
   timestamp: Joi.date().iso().required(),
