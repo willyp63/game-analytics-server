@@ -33,7 +33,7 @@ describe("High Scores API", () => {
       const event = createTestEvent({
         game: "tetris",
         player: "123-456",
-        event: "high_score",
+        event_name: "high_score",
         data: {
           score: 1500,
           player_name: "player1",
@@ -49,7 +49,7 @@ describe("High Scores API", () => {
       const eventsCollection = testDb.getCollection("tetris_events");
       const storedEvent = await eventsCollection.findOne();
       expect(storedEvent).toBeTruthy();
-      expect(storedEvent?.event).toBe("high_score");
+      expect(storedEvent?.event_name).toBe("high_score");
       expect(storedEvent?.data.score).toBe(1500);
 
       // Verify the score was stored in the scores collection
@@ -66,7 +66,7 @@ describe("High Scores API", () => {
           game: "tetris",
           mode: "classic",
           player: "123-456",
-          event: "high_score",
+          event_name: "high_score",
           data: {
             score: 5595,
             player_name: "player1",
@@ -76,7 +76,7 @@ describe("High Scores API", () => {
           game: "tetris",
           mode: "classic",
           player: "abc-def",
-          event: "high_score",
+          event_name: "high_score",
           data: {
             score: 1000,
             player_name: "player2",
@@ -86,7 +86,7 @@ describe("High Scores API", () => {
           game: "tetris",
           mode: "classic",
           player: "xyz-xyz",
-          event: "high_score",
+          event_name: "high_score",
           data: {
             score: 1250,
             player_name: "player3",

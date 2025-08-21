@@ -17,7 +17,7 @@ export interface GameEvent {
   mode?: string;
   player: string;
   run?: string;
-  event: string;
+  event_name: string;
   data: Record<string, unknown>;
   timestamp: Date;
 }
@@ -27,7 +27,7 @@ export const gameEventSchema = Joi.object({
   mode: Joi.string().trim().min(1),
   player: Joi.string().trim().min(1).required(),
   run: Joi.string().trim().min(1),
-  event: Joi.string().trim().min(1).required(),
+  event_name: Joi.string().trim().min(1).required(),
   data: Joi.object().unknown(true).required(),
   timestamp: Joi.date().iso().required(),
 });
@@ -39,7 +39,7 @@ export interface EventRecord extends GameEvent {
 
 // High score event sent from the client
 export interface ScoreEvent extends GameEvent {
-  event: "high_score";
+  event_name: "high_score";
   data: {
     score: number;
     player_name: string;
