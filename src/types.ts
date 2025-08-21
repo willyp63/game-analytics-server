@@ -28,7 +28,7 @@ export const gameEventSchema = Joi.object({
   player: Joi.string().trim().min(1).required(),
   run: Joi.string().trim().min(1),
   event_name: Joi.string().trim().min(1).required(),
-  data: Joi.object().unknown(true).required(),
+  data: Joi.object().unknown(true),
   timestamp: Joi.date().iso().required(),
 });
 

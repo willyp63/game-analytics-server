@@ -34,6 +34,7 @@ const handleEvent = async (req: Request, res: Response) => {
     }
 
     const eventData = validationResult.data;
+    eventData.data = eventData.data || {};
 
     // Validate game is supported
     if (!getSupportedGames().includes(eventData.game)) {
