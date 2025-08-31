@@ -1,9 +1,26 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
 
 import { createEventRoutes } from "./events";
 
 export const createApp = async () => {
   const app = express();
+
+  // CORS middleware - configure to allow requests from itch.io and other origins
+  app.use(
+    cors({
+      origin: [
+        "https://html-classic.itch.zone",
+        "https://itch.io",
+        "https://*.itch.io",
+        "http://localhost:3000", // for local development
+        "http://localhost:8080", // for local development
+      ],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    })
+  );
 
   // Middleware
   app.use(express.json());
