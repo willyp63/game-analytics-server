@@ -113,6 +113,7 @@ const getHighScores = async (req: Request, res: Response) => {
         player_name: score.player_name,
         score: score.score,
         timestamp: score.timestamp,
+        data: score.data,
       }))
     );
   } catch (error) {
