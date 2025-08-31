@@ -10,7 +10,11 @@ const mongoOptions = {
 };
 
 // TODO: Move this to a collection or env variable
-const SUPPORTED_GAMES = ["eldritch_shores", "whacky_wharf"];
+const SUPPORTED_GAMES = [
+  "eldritch_shores",
+  "whacky_wharf",
+  "collapse_protocol",
+];
 
 let client: MongoClient;
 let db: Db;
@@ -156,7 +160,12 @@ export const insertScore = async (
   score: ScoreRecord
 ): Promise<DatabaseResult<void>> => {
   try {
-    await getScoresCollection(score.game).insertOne(score);
+    const scoresCollection = getScoresCollection(score.game);
+
+    // override any old records for this run
+    await scoresCollection.deleteMany({ run: score.run });
+    await scoresCollection.insertOne(score);
+
     return { success: true };
   } catch (error) {
     console.error(`Error inserting score for ${score.game}:`, error);

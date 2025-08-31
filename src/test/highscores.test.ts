@@ -32,7 +32,9 @@ describe("High Scores API", () => {
     it("should accept a high score event and store it", async () => {
       const event = createTestEvent({
         game: "eldritch_shores",
+        mode: "classic",
         player: "123-456",
+        run: "abc-def",
         event_name: "high_score",
         data: {
           score: 1500,
@@ -63,6 +65,7 @@ describe("High Scores API", () => {
           game: "eldritch_shores",
           mode: "classic",
           player: "123-456",
+          run: "abc-def",
           event_name: "high_score",
           data: {
             score: 5595,
@@ -73,6 +76,7 @@ describe("High Scores API", () => {
           game: "eldritch_shores",
           mode: "classic",
           player: "abc-def",
+          run: "xyz-xyz",
           event_name: "high_score",
           data: {
             score: 1000,
@@ -83,6 +87,7 @@ describe("High Scores API", () => {
           game: "eldritch_shores",
           mode: "classic",
           player: "xyz-xyz",
+          run: "123-456",
           event_name: "high_score",
           data: {
             score: 1250,

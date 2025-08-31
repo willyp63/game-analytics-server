@@ -50,9 +50,9 @@ export interface ScoreEvent extends GameEvent {
 export interface ScoreRecord {
   _id?: ObjectId;
   game: string;
-  mode?: string;
+  mode: string;
   player: string;
-  run?: string;
+  run: string;
   player_name: string;
   score: number;
   data: Record<string, unknown>;

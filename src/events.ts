@@ -49,6 +49,8 @@ const handleEvent = async (req: Request, res: Response) => {
     const score = eventData.data.score;
     if (
       eventData.event_name === "high_score" &&
+      eventData.mode &&
+      eventData.run &&
       playerName &&
       typeof playerName === "string" &&
       score &&
