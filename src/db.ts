@@ -14,6 +14,7 @@ const SUPPORTED_GAMES = [
   "eldritch_shores",
   "whacky_wharf",
   "collapse_protocol",
+  "gundig",
 ];
 
 let client: MongoClient;
