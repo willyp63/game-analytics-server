@@ -180,12 +180,17 @@ export const insertScore = async (
 export const findHighScores = async (
   game: string,
   mode: string,
-  limit: number = 100
+  limit: number = 100,
+  playerId?: string
 ): Promise<DatabaseResult<ScoreRecord[]>> => {
   try {
     const collection = getScoresCollection(game);
+    const query: Record<string, string> = { mode };
+    if (playerId) {
+      query.player = playerId;
+    }
     const scores = await collection
-      .find({ mode })
+      .find(query)
       .sort({ score: -1 })
       .limit(limit)
       .toArray();

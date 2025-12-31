@@ -87,6 +87,7 @@ const handleEvent = async (req: Request, res: Response) => {
 
 const getHighScores = async (req: Request, res: Response) => {
   const { game, mode } = req.params;
+  const player = req.query.player as string | undefined;
 
   // Validate game is supported
   if (!getSupportedGames().includes(game)) {
@@ -98,7 +99,7 @@ const getHighScores = async (req: Request, res: Response) => {
 
   try {
     // Get the high scores for the given game and mode using type-safe function
-    const result = await findHighScores(game, mode, 100);
+    const result = await findHighScores(game, mode, 100, player);
     if (!result.success) {
       console.error("Failed to fetch high scores:", result.error);
       return res.status(500).json({
